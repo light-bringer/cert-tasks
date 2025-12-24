@@ -12,12 +12,10 @@ services:
     environment:
       - PORT=8080
     restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/tasks"]
-      interval: 30s
-      timeout: 3s
-      retries: 3
-      start_period: 5s
+    # Note: Distroless images don't include shell or utilities like curl/wget
+    # Health checks in docker-compose require tools inside the container
+    # For production, use Kubernetes httpGet probes or external monitoring
+    # To test if the container is healthy, use: curl http://localhost:8080/tasks
 
   # Example: Add PostgreSQL for future persistent storage
   # postgres:
@@ -37,5 +35,24 @@ services:
   #     timeout: 5s
   #     retries: 5
 
+  healthcheck:
+    image: busybox:latest
+    container_name: cert-tasks-healthcheck
+    depends_on:
+      - api
+    restart: unless-stopped
+    command: >
+      sh -c "
+      while true; do
+        if wget -q --spider http://api:8080/tasks; then
+          echo '[$(date)] API is healthy';
+        else
+          echo '[$(date)] API is unhealthy' >&2;
+          exit 1;
+        fi;
+        sleep 30;
+      done
+      "
+  
 # volumes:
 #   postgres_data:

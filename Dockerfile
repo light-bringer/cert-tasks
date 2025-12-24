@@ -2,7 +2,7 @@
 FROM golang:1.25.5-alpine AS builder
 
 # Install build dependencies
-RUN apk add --no-cache git
+RUN apk add --no-cache git ca-certificates
 
 # Set working directory
 WORKDIR /app
@@ -17,35 +17,36 @@ RUN go mod download
 COPY . .
 
 # Build the application
-RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -ldflags="-w -s" -o /app/bin/api ./cmd/api
+# - CGO_ENABLED=0: Build a statically linked binary
+# - -ldflags="-w -s": Strip debug info and symbol table for smaller binary
+# - -trimpath: Remove file system paths from binary for reproducibility
+RUN CGO_ENABLED=0 GOOS=linux go build \
+    -a -installsuffix cgo \
+    -ldflags="-w -s -extldflags '-static'" \
+    -trimpath \
+    -o /app/bin/api ./cmd/api
 
-# Runtime stage
-FROM alpine:latest
+# Runtime stage - using distroless
+FROM gcr.io/distroless/static-debian12:nonroot
 
-# Install ca-certificates for HTTPS requests
-RUN apk --no-cache add ca-certificates
-
-# Create non-root user
-RUN addgroup -g 1000 appgroup && \
-    adduser -D -u 1000 -G appgroup appuser
-
-WORKDIR /app
+# Copy CA certificates from builder (for HTTPS requests)
+COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
 
 # Copy binary from builder
-COPY --from=builder /app/bin/api .
+COPY --from=builder /app/bin/api /app/api
 
-# Change ownership to non-root user
-RUN chown -R appuser:appgroup /app
-
-# Switch to non-root user
-USER appuser
+# Distroless nonroot image already uses uid/gid 65532
+# No need to create user - nonroot variant runs as user "nonroot"
 
 # Expose port
 EXPOSE 8080
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-    CMD wget --no-verbose --tries=1 --spider http://localhost:8080/tasks || exit 1
+# Set working directory
+WORKDIR /app
+
+# Distroless doesn't support HEALTHCHECK (no shell)
+# Health checks should be configured at orchestration layer
+# (Docker Compose, Kubernetes, etc.)
 
 # Run the application
-CMD ["./api"]
+ENTRYPOINT ["/app/api"]
