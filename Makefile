@@ -117,4 +117,15 @@ docker-run: ## Run Docker container (if Dockerfile exists)
 	@echo "Running Docker container..."
 	@docker run -p 8080:8080 cert-tasks:latest
 
+docker-compose-up: ## Start services using Docker Compose
+	@echo "Starting Docker Compose services..."
+	@docker-compose up
+
+docker-compose-down: ## Stop and remove Docker Compose services
+	@echo "Stopping Docker Compose services..."
+	@docker-compose down
+
+docker-compose-logs: ## Follow Docker Compose logs
+	@docker-compose logs -f api
+
 all: clean install-deps fmt vet test build ## Clean, install deps, format, vet, test, and build

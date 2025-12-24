@@ -1,0 +1,70 @@
+# Git
+.git
+.gitignore
+.github
+
+# Documentation
+*.md
+docs/
+CLAUDE.md
+LICENSE
+
+# Build artifacts
+bin/
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Test artifacts
+*.test
+*.out
+coverage.*
+*.coverprofile
+profile.cov
+.server.pid
+
+# Dependencies
+vendor/
+
+# IDE/Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Environment
+.env
+.env.*
+
+# CI/CD
+.github/
+
+# Docker
+Dockerfile
+.dockerignore
+docker-compose*.yml
+
+# Scripts
+scripts/
+
+# Deployment configs (if you don't need them in the image)
+deployments/
+
+# Python test script (not needed in Go container)
+test_api.py
+__pycache__/
+*.pyc
+
+# Go workspace
+go.work
+go.work.sum
+
+# Makefile (not needed in container)
+Makefile
+
+# Test data
+test/
+*.golden
