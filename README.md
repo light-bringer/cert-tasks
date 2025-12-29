@@ -291,28 +291,30 @@ cert-tasks/
 └── README.md                    # This file
 ```
 
-### Test Script
+### Integration Tests
 
-A Python test script is provided for comprehensive API testing with tabular output:
+**Go Integration Tests**
+
+Go integration tests are available in the `test/` directory:
 
 ```bash
-# Install dependencies
-pip install requests
-pip install tabulate  # Optional, for better table formatting
+# Run integration tests (requires server on :8080)
+make test-integration
 
-# Run tests (summary mode - default)
-python3 test_api.py
+# Run with automatic server start/stop
+make test-integration-standalone
 
-# Run tests (verbose mode - detailed output)
-python3 test_api.py -v
+# Run all tests (unit + integration)
+make test-all
 ```
 
 **Features**:
-- 21 test cases covering all endpoints and validation scenarios
-- Tabular output with statistics (pass rate, timing, etc.)
-- Color-coded status indicators (✅ PASS, ❌ FAIL)
+- 18 test cases covering all endpoints and validation scenarios
+- Tabular output with detailed statistics
+- Uses standard Go testing framework
 - CI/CD friendly (exit code 0/1)
-- Verbose mode for debugging
+- Automatically starts/stops server in standalone mode
+
 
 ## Implementation Notes
 
