@@ -39,6 +39,28 @@ You can configure the port using the `PORT` environment variable:
 PORT=3000 ./bin/api
 ```
 
+### Run with Docker
+
+The easiest way to run the application is using Docker:
+
+```bash
+# Using Docker Compose (recommended)
+docker-compose up
+
+# Or build and run manually
+docker build -t cert-tasks:latest .
+docker run -p 8080:8080 cert-tasks:latest
+
+# Run on a different port
+docker run -p 3000:8080 cert-tasks:latest
+```
+
+The Docker image uses a multi-stage build with Google's **distroless** base image for maximum security:
+- **Ultra-minimal size**: ~5-8MB final image
+- **No shell or package manager**: Eliminates shell-based attacks
+- **Non-root user**: Runs as user "nonroot" (uid 65532)
+- **Production-ready**: Google-maintained, security-focused base image
+
 ## API Endpoints
 
 ### Task Model
@@ -227,14 +249,24 @@ All error responses follow this format:
 ### Run Tests
 
 ```bash
-# Run all tests
-go test ./...
+# Run unit tests
+make test
+go test ./cmd/... ./internal/...
+
+# Run integration tests (requires server on :8080)
+make test-integration
+
+# Run integration tests with automatic server start/stop
+make test-integration-standalone
+
+# Run all tests (unit + integration)
+make test-all
 
 # Run tests with coverage
-go test -cover ./...
+make test-coverage
 
 # Run tests with race detector
-go test -race ./...
+make test-race
 
 # Run specific package tests
 go test ./internal/repository/...
@@ -253,21 +285,34 @@ cert-tasks/
 │   ├── models/                  # Domain models and DTOs
 │   ├── repository/              # Data access layer
 │   └── server/                  # Server setup and routing
-├── test_api.py                  # Python test script (requires requests)
+├── test/
+│   └── integration_test.go      # Go integration tests
+├── test_api.py                  # Python test script (deprecated)
 └── README.md                    # This file
 ```
 
 ### Test Script
 
-A Python test script is provided for comprehensive API testing:
+A Python test script is provided for comprehensive API testing with tabular output:
 
 ```bash
-# Install dependencies (if needed)
+# Install dependencies
 pip install requests
+pip install tabulate  # Optional, for better table formatting
 
-# Run tests
+# Run tests (summary mode - default)
 python3 test_api.py
+
+# Run tests (verbose mode - detailed output)
+python3 test_api.py -v
 ```
+
+**Features**:
+- 21 test cases covering all endpoints and validation scenarios
+- Tabular output with statistics (pass rate, timing, etc.)
+- Color-coded status indicators (✅ PASS, ❌ FAIL)
+- CI/CD friendly (exit code 0/1)
+- Verbose mode for debugging
 
 ## Implementation Notes
 

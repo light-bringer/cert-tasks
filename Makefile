@@ -29,19 +29,36 @@ run-dev: ## Run the application without building (using go run)
 	@echo "Running in development mode..."
 	@$(GO) run $(CMD_PATH)
 
-test: ## Run all tests
-	@echo "Running tests..."
-	@$(GOTEST) -v ./...
+test: ## Run unit tests
+	@echo "Running unit tests..."
+	@$(GOTEST) -v ./cmd/... ./internal/...
 
 test-coverage: ## Run tests with coverage report
 	@echo "Running tests with coverage..."
-	@$(GOTEST) -coverprofile=coverage.out ./...
+	@$(GOTEST) -coverprofile=coverage.out ./cmd/... ./internal/...
 	@$(GO) tool cover -html=coverage.out -o coverage.html
 	@echo "Coverage report generated: coverage.html"
 
 test-race: ## Run tests with race detector
 	@echo "Running tests with race detector..."
-	@$(GOTEST) -race ./...
+	@$(GOTEST) -race ./cmd/... ./internal/...
+
+test-integration: ## Run integration tests (requires server running on localhost:8080)
+	@echo "Running integration tests..."
+	@$(GOTEST) -v ./test/...
+
+test-integration-standalone: build ## Build, run server, execute integration tests, then stop server
+	@echo "Starting server in background..."
+	@./$(BINARY_PATH) & echo $$! > .server.pid
+	@sleep 2
+	@echo "Running integration tests..."
+	@$(GOTEST) -v ./test/... || (kill `cat .server.pid` 2>/dev/null; rm -f .server.pid; exit 1)
+	@echo "Stopping server..."
+	@kill `cat .server.pid` 2>/dev/null || true
+	@rm -f .server.pid
+	@echo "Integration tests complete"
+
+test-all: test test-integration-standalone ## Run all tests (unit + integration)
 
 test-short: ## Run tests in short mode
 	@$(GOTEST) -short ./...
@@ -65,7 +82,7 @@ vet: ## Run go vet
 	@echo "Running go vet..."
 	@$(GOVET) ./...
 
-check: fmt vet lint test ## Run all checks (format, vet, lint, test)
+check: fmt vet lint test ## Run all checks (format, vet, lint, unit tests)
 
 clean: ## Remove build artifacts and test outputs
 	@echo "Cleaning..."
@@ -85,8 +102,8 @@ deps-update: ## Update all dependencies
 	@$(GO) mod tidy
 	@echo "Dependencies updated"
 
-test-api: ## Run Python API test script (requires requests library)
-	@echo "Running API tests..."
+test-api: ## Run Python API test script (requires requests library) - DEPRECATED: use test-integration
+	@echo "Running Python API tests (deprecated - use 'make test-integration' instead)..."
 	@which python3 > /dev/null || (echo "python3 not installed" && exit 1)
 	@python3 test_api.py
 
@@ -128,4 +145,4 @@ docker-compose-down: ## Stop and remove Docker Compose services
 docker-compose-logs: ## Follow Docker Compose logs
 	@docker-compose logs -f api
 
-all: clean install-deps fmt vet test build ## Clean, install deps, format, vet, test, and build
+all: clean install-deps fmt vet test build ## Clean, install deps, format, vet, unit tests, and build
